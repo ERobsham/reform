@@ -6,9 +6,9 @@ import (
 )
 
 type SourceFileInfo struct {
-	Language   string
-	Filename   string
-	LineNumber uint64
+	Language   string `json:"lang,omitempty"`
+	Filename   string `json:"file,omitempty"`
+	LineNumber uint64 `json:"line,omitempty"`
 }
 
 func parseSourceFileInfo(line string) (sfInfo SourceFileInfo, remainder string, err error) {

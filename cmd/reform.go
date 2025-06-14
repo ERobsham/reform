@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -23,9 +24,9 @@ func parseArgs() cliArgs {
 	a := cliArgs{}
 
 	flag.IntVar(&a.LogLevel, "log", int(slog.LevelInfo), "set log level (default: 0)")
-	flag.StringVar(&a.ConfigPath, "config", "", "path to a json config to allow reading multiple streams at once (default: none)")
 	flag.StringVar(&a.Cmd, "cmd", "", "command to read the stdout from ie 'ssh user@host tail -F /var/log/syslog' (default: none)")
-	flag.StringVar(&a.Cmd, "out", "", "file to append processed output to -- if not set, defaults to stdout (default: none)")
+	flag.StringVar(&a.OutputPath, "out", "", "file to append processed output to -- if not set, defaults to stdout (default: none)")
+	flag.StringVar(&a.ConfigPath, "config", "", "path to a json config to allow reading multiple streams at once (default: none)")
 
 	flag.Parse()
 
@@ -41,29 +42,69 @@ func main() {
 	log.SetDefaultLogLevel(logLevel)
 
 	inStreams := []streams.InputStream{}
+	outStreams := []streams.OutputStream{}
+
 	if args.Cmd != "" {
 		inStreams = append(inStreams, parseCmd(args.Cmd))
 	}
+	if args.OutputPath != "" {
+		out, err := streams.NewOutputFile(args.OutputPath)
+		if err != nil {
+			log.Default().Error("invalid output path",
+				slog.String("path", args.OutputPath),
+				slog.String("err", err.Error()),
+			)
+			return
+		}
+		outStreams = append(outStreams, out)
+	}
+
 	if args.ConfigPath != "" {
 		// TODO
 	}
-	if args.OutputPath != "" {
-		// TODO
+
+	if len(outStreams) == 0 {
+		out := &streams.StdoutStream{}
+		outStreams = append(outStreams, out)
 	}
 
 	a := streams.NewStreamAggregator(context.Background(), inStreams)
 	counter := uint64(0)
 
+	errs := []error{}
 	for {
 		line, err := a.Next()
 		if err != nil {
+			if errors.Is(err, streams.ErrStreamClosed) {
+				break
+			}
+			errs = append(errs, err)
 			break
 		}
 
 		parsed := parser.ParseLine(line)
-		fmt.Printf("%05d: %s \n", counter, parsed)
+
+		for _, out := range outStreams {
+			err := out.Output(parsed)
+			if err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if len(errs) > 0 {
+			break
+		}
 
 		counter++
+	}
+
+	for _, err := range errs {
+		log.Default().Error("encountered error",
+			slog.String("error", err.Error()),
+		)
+	}
+
+	for _, out := range outStreams {
+		out.Close()
 	}
 
 	a.Close()

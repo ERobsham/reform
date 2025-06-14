@@ -9,14 +9,14 @@ import (
 )
 
 type ParsedLine struct {
-	Timestamp time.Time
-	Host      string
-	Process   ProcessInfo
-	Message   string
+	Timestamp time.Time   `json:"time,omitzero"`
+	Host      string      `json:"host,omitempty"`
+	Process   ProcessInfo `json:"proc,omitzero"`
+	Message   string      `json:"msg,omitempty"`
 
 	// optional
-	LogLevel   string
-	SourceInfo SourceFileInfo
+	LogLevel   string         `json:"level,omitempty"`
+	SourceInfo SourceFileInfo `json:"src,omitzero"`
 }
 
 func ParseLine(line string) ParsedLine {
