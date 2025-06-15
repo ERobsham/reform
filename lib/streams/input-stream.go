@@ -3,9 +3,11 @@ package streams
 import (
 	"bufio"
 	"context"
+	"log/slog"
 	"os/exec"
 	"strings"
 
+	"github.com/erobsham/reform/lib/log"
 	"github.com/erobsham/reform/lib/parser"
 )
 
@@ -17,15 +19,12 @@ type InputStream interface {
 	Next() (string, error)
 }
 
-func NewCmdStream(ctx context.Context, streamName string, cmdArgs []string) CmdStream {
-	cmdName := cmdArgs[0]
-	args := []string{}
-
-	if len(cmdArgs) > 0 {
-		args = cmdArgs[1:]
+func NewCmdStream(ctx context.Context, streamName string, command string, args ...string) CmdStream {
+	if args == nil {
+		args = []string{}
 	}
 
-	cmd := exec.Command(cmdName, args...)
+	cmd := exec.Command(command, args...)
 
 	s := CmdStream{
 		name:   streamName,
@@ -63,7 +62,10 @@ func (s CmdStream) runloop() {
 	if err != nil {
 		return
 	}
+	errPipe, _ := s.cmd.StderrPipe()
+
 	reader := bufio.NewReader(pipe)
+	errReader := bufio.NewReader(errPipe)
 
 	err = s.cmd.Start()
 	if err != nil {
@@ -74,6 +76,13 @@ outer:
 	for {
 		line, err := readNextLine(reader)
 		if err != nil {
+			errOut, _ := errReader.ReadBytes('\n')
+			if len(errOut) > 0 {
+				log.Default().
+					Error("cmd err",
+						slog.String("error", string(errOut)),
+					)
+			}
 			break
 		}
 
