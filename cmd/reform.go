@@ -63,12 +63,71 @@ func handleArgs(args config.CliArgs) (inStreams []streams.InputStream, outStream
 	}
 
 	if args.ConfigPath != "" {
-		// TODO
+		ins, outs := handleConfig(args.ConfigPath)
+		inStreams = append(inStreams, ins...)
+		outStreams = append(outStreams, outs...)
 	}
 
 	if len(outStreams) == 0 {
 		out := &streams.StdoutStream{}
 		outStreams = append(outStreams, out)
+	}
+
+	return
+}
+
+func handleConfig(cfgPath string) (inStreams []streams.InputStream, outStreams []streams.OutputStream) {
+	inStreams = []streams.InputStream{}
+	outStreams = []streams.OutputStream{}
+
+	cfg, err := config.LoadConfigFrom(cfgPath)
+	if err != nil {
+		log.Default().
+			Error("error loading config json",
+				slog.String("error", err.Error()),
+			)
+		return nil, nil
+	}
+
+	for name, src := range cfg.Sources {
+		s := streams.NewCmdStream(context.Background(), name, src.Cmd, src.Args...)
+		inStreams = append(inStreams, s)
+	}
+
+	for name, out := range cfg.Outputs {
+		switch out.OutputType {
+		case config.OutputType_Stdout:
+			o := &streams.StdoutStream{}
+			outStreams = append(outStreams, o)
+		case config.OutputType_File:
+			cfg, err := config.ParseOutputFileCfg(out.Config)
+			if err != nil {
+				log.Default().
+					Error("file output config parsing error",
+						slog.String("name", name),
+						slog.String("error", err.Error()),
+					)
+				continue
+			}
+
+			o, err := streams.NewOutputFile(cfg.Path)
+			if err != nil {
+				log.Default().
+					Error("error creating output file",
+						slog.String("name", name),
+						slog.String("error", err.Error()),
+					)
+				continue
+			}
+			outStreams = append(outStreams, o)
+		// `case config.OutputType_None:`
+		default:
+			log.Default().
+				Error("invalid output type",
+					slog.String("name", name),
+				)
+			continue
+		}
 	}
 
 	return
