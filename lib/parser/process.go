@@ -3,37 +3,33 @@ package parser
 import (
 	"strconv"
 	"strings"
+
+	"github.com/erobsham/reform/lib/types"
 )
 
-type ProcessInfo struct {
-	Name string
-	PID  uint64
-	TID  uint64
-}
-
-func parseProcessInfo(line string) (proc ProcessInfo, remainder string, err error) {
+func parseProcessInfo(line string) (proc types.ProcessInfo, remainder string, err error) {
 	// `Process Name[pid]: ... message ...`
 	// `process[pid][tid]: ... message ...`
 
 	idx := strings.IndexByte(line, ':')
 	if idx == -1 {
-		return ProcessInfo{}, line, ParseError("no ':' found before EoL")
+		return types.ProcessInfo{}, line, ParseError("no ':' found before EoL")
 	}
 	procInfo := line[:idx]
 
 	name, idInfo, err := parseProcName(procInfo)
 	if err != nil {
-		return ProcessInfo{}, line, err
+		return types.ProcessInfo{}, line, err
 	}
 
 	pid, tid, err := parseProcIDs(idInfo)
 	if err != nil {
-		return ProcessInfo{}, line, err
+		return types.ProcessInfo{}, line, err
 	}
 
 	idx = consumeNextSpace(line, idx)
 
-	return ProcessInfo{
+	return types.ProcessInfo{
 		Name: name,
 		PID:  pid,
 		TID:  tid,

@@ -13,6 +13,7 @@ type CliArgs struct {
 	ConfigPath string
 	Cmd        string
 	OutputPath string
+	SeqServer  string
 }
 
 func ParseCmdStr(cmdStr string) (string, []string) {
@@ -71,4 +72,20 @@ func parseCmdArgs(argStr string) []string {
 		}
 	}
 	return args
+}
+
+func ParseSeqServer(serverInfo string) (string, string) {
+	idx := strings.IndexByte(serverInfo, ';')
+	if idx == -1 {
+		log.Default().Debug("init with seq output stream", slog.String("host", serverInfo))
+		return serverInfo, ""
+	} else {
+		host := serverInfo[:idx]
+		key := serverInfo[idx+1:]
+		log.Default().Debug("init with seq output stream",
+			slog.String("host", host),
+			slog.String("api-key", key),
+		)
+		return host, key
+	}
 }

@@ -3,6 +3,8 @@ package parser
 import (
 	"reflect"
 	"testing"
+
+	"github.com/erobsham/reform/lib/types"
 )
 
 func Test_parseProcessInfo(t *testing.T) {
@@ -12,21 +14,21 @@ func Test_parseProcessInfo(t *testing.T) {
 	tests := []struct {
 		name          string
 		args          args
-		wantProc      ProcessInfo
+		wantProc      types.ProcessInfo
 		wantRemainder string
 		wantErr       bool
 	}{
 		{
 			name:          "std proc w/PID",
 			args:          args{"Process Name[112233]: ... message ..."},
-			wantProc:      ProcessInfo{Name: "Process Name", PID: 112233},
+			wantProc:      types.ProcessInfo{Name: "Process Name", PID: 112233},
 			wantRemainder: "... message ...",
 			wantErr:       false,
 		},
 		{
 			name:          "std proc w/PID and TID",
 			args:          args{"process[112][334]: ... message ..."},
-			wantProc:      ProcessInfo{Name: "process", PID: 112, TID: 334},
+			wantProc:      types.ProcessInfo{Name: "process", PID: 112, TID: 334},
 			wantRemainder: "... message ...",
 			wantErr:       false,
 		},

@@ -3,15 +3,11 @@ package parser
 import (
 	"strconv"
 	"strings"
+
+	"github.com/erobsham/reform/lib/types"
 )
 
-type SourceFileInfo struct {
-	Language   string `json:"lang,omitempty"`
-	Filename   string `json:"file,omitempty"`
-	LineNumber uint64 `json:"line,omitempty"`
-}
-
-func parseSourceFileInfo(line string) (sfInfo SourceFileInfo, remainder string, err error) {
+func parseSourceFileInfo(line string) (sfInfo types.SourceFileInfo, remainder string, err error) {
 	suffixTypeMap := map[string]string{
 		"C":           ".c",
 		"C++":         ".cpp",

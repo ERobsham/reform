@@ -19,6 +19,7 @@ func parseArgs() config.CliArgs {
 	flag.StringVar(&a.Cmd, "cmd", "", "command to read the stdout from ie 'ssh user@host tail -F /var/log/syslog' (default: none)")
 	flag.StringVar(&a.OutputPath, "out", "", "file to append processed output to -- if not set, defaults to stdout (default: none)")
 	flag.StringVar(&a.ConfigPath, "config", "", "path to a json config to allow reading multiple streams at once (default: none)")
+	flag.StringVar(&a.SeqServer, "seq", "", "specify `{hostname}:{port}[;{apikey}]` ex: `localhost:5341` | `localhost:5341;api-key-value` (default: none)")
 
 	flag.Parse()
 
@@ -60,6 +61,11 @@ func handleArgs(args config.CliArgs) (inStreams []streams.InputStream, outStream
 			return nil, nil
 		}
 		outStreams = append(outStreams, out)
+	}
+	if args.SeqServer != "" {
+		host, key := config.ParseSeqServer(args.SeqServer)
+		s := streams.NewSeqStream(context.Background(), host, key)
+		outStreams = append(outStreams, s)
 	}
 
 	if args.ConfigPath != "" {
