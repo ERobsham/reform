@@ -3,6 +3,8 @@ package streams
 import (
 	"bufio"
 	"context"
+	"errors"
+	"io"
 	"log/slog"
 	"os/exec"
 	"strings"
@@ -75,7 +77,7 @@ func (s CmdStream) runloop() {
 outer:
 	for {
 		line, err := readNextLine(reader)
-		if err != nil {
+		if err != nil && !errors.Is(err, io.EOF) {
 			errOut, _ := errReader.ReadBytes('\n')
 			if len(errOut) > 0 {
 				log.Default().
@@ -90,7 +92,11 @@ outer:
 		case <-s.ctx.Done():
 			break outer
 		case s.output <- line:
-			continue
+			if errors.Is(err, io.EOF) {
+				break outer
+			} else {
+				continue
+			}
 		}
 	}
 }
@@ -100,6 +106,9 @@ func readNextLine(pipe *bufio.Reader) (string, error) {
 	for {
 		str, err := pipe.ReadString('\n')
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return line + str, err
+			}
 			return line, err
 		}
 
@@ -107,27 +116,16 @@ func readNextLine(pipe *bufio.Reader) (string, error) {
 		if line == "" {
 			line = str
 		} else {
-			line = line + " " + str
+			line += str
 		}
 
-		if isAnotherLineExpected(line) && !isStartOfLineOrEmpty(pipe) {
+		if !isStartOfLineOrEmpty(pipe) {
+			line += " "
 			continue
 		}
 
 		return line, err
 	}
-}
-
-func isAnotherLineExpected(current string) bool {
-	len := len(current)
-	if len == 0 {
-		return false
-	}
-
-	lastChar := current[len-1]
-	possiblyJSON := isPossibleJSON(lastChar) || isPossibleJSONLike(lastChar)
-
-	return possiblyJSON
 }
 
 func isStartOfLineOrEmpty(pipe *bufio.Reader) bool {
@@ -138,52 +136,6 @@ func isStartOfLineOrEmpty(pipe *bufio.Reader) bool {
 
 	_, _, err = parser.ParseSystemTimeStamp(string(data))
 	return err == nil
-}
-
-func isPossibleJSON(b byte) bool {
-	lineEndings := map[byte]struct{}{
-		'{': {}, // opening object
-		'}': {}, // closing object
-
-		'[': {}, // opening array
-		']': {}, // closing array
-
-		',': {}, // mid-object field separator
-
-		'"': {}, // closing string field
-
-		'0': {}, // closing number field
-		'1': {}, // closing number field
-		'2': {}, // closing number field
-		'3': {}, // closing number field
-		'4': {}, // closing number field
-		'5': {}, // closing number field
-		'6': {}, // closing number field
-		'7': {}, // closing number field
-		'8': {}, // closing number field
-		'9': {}, // closing number field
-
-		'e': {}, // closing bool field (tru'e' | fals'e')
-		'l': {}, // closing null field (nul'l')
-	}
-
-	_, exists := lineEndings[b]
-
-	return exists
-}
-func isPossibleJSONLike(b byte) bool {
-	lineEndings := map[byte]struct{}{
-		// Objective-C dictionary log like:
-		// 	`{\n "key" = ( \n "value",\n "val2"\n );\n}`
-		';': {},
-		'=': {},
-		'(': {},
-		')': {},
-	}
-
-	_, exists := lineEndings[b]
-
-	return exists
 }
 
 type StreamError string
