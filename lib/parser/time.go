@@ -98,6 +98,9 @@ func parseSuffixTimestamp(line string, layouts []string) (time.Time, string, err
 		if lineLen < layoutLen+1 {
 			continue
 		}
+		if lastIdx-layoutLen < 0 {
+			continue
+		}
 
 		timestamp, err := time.Parse(layout, line[lastIdx-layoutLen:lastIdx])
 		if err != nil {
