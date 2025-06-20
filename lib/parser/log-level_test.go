@@ -25,6 +25,24 @@ func Test_parseLogLevel(t *testing.T) {
 			wantLogLevel:  "crit",
 			wantRemainder: "... some message ...",
 		},
+		{
+			name:          "too short",
+			args:          args{"nil"},
+			wantRemainder: "nil",
+			wantErr:       true,
+		},
+		{
+			name:          "not a well-known prefix",
+			args:          args{"not a log level on line"},
+			wantRemainder: "not a log level on line",
+			wantErr:       true,
+		},
+		{
+			name:          "misc blob data",
+			args:          args{"0ad0faf87d687757da5df8"},
+			wantRemainder: "0ad0faf87d687757da5df8",
+			wantErr:       true,
+		},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {

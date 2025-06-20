@@ -20,6 +20,17 @@ func Test_parseHostName(t *testing.T) {
 			wantRemainder: "SomeProcess[12394]: ...",
 			wantErr:       false,
 		},
+		{
+			name:          "MacOS duplicates case",
+			args:          args{"--- last message repeated 32 times ---"},
+			wantHostname:  "",
+			wantRemainder: "--- last message repeated 32 times ---",
+			wantErr:       false,
+		},
+		{
+			name:    "too short",
+			wantErr: true,
+		},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
