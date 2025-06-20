@@ -1,9 +1,10 @@
 package parser
 
 const (
-	stdWrapperPrefixes = "({[< "
-	stdWrapperSuffixes = ")}]> "
-	stdWrappers        = "(){}[]<> "
+	stdWrapperPrefixes            = "({[< "
+	stdWrapperSuffixes            = ")}]> "
+	stdWrapperOrSrcEndingSuffixes = ":" + stdWrapperSuffixes
+	stdWrappers                   = "(){}[]<> "
 )
 
 var (
@@ -41,6 +42,10 @@ func consumeNextSpace(line string, endIdx int) int {
 		}
 	}
 	return endIdx
+}
+
+func consumeNextNumber(line string, idx int) int {
+	return consumeNext(line, idx, isNumericChar)
 }
 
 // march idx forward, consuming closing wrappers and spaces
@@ -95,6 +100,7 @@ func consumeNext(line string, idx int, testFn testFunc) int {
 	len := len(line)
 	for {
 		if !(len > idx+1) {
+			idx = len
 			break
 		}
 		if !testFn(line[idx]) {
@@ -112,15 +118,22 @@ func consumeNext(line string, idx int, testFn testFunc) int {
 
 type testFunc func(byte) bool
 
-func isAlphanumeric(b byte) bool {
+func isNumericChar(b byte) bool {
+	const numbrRange = "09"
+	return (b >= numbrRange[0] && b <= numbrRange[1])
+}
+
+func isAlphaChar(b byte) bool {
 	const (
-		numbrRange = "09"
 		upperRange = "AZ"
 		lowerRange = "az"
 	)
-	return (b >= numbrRange[0] && b <= numbrRange[1]) ||
-		(b >= upperRange[0] && b <= upperRange[1]) ||
+	return (b >= upperRange[0] && b <= upperRange[1]) ||
 		(b >= lowerRange[0] && b <= lowerRange[1])
+}
+
+func isAlphanumeric(b byte) bool {
+	return (isAlphaChar(b)) || (isNumericChar(b))
 }
 
 func isInSet(b byte, set map[byte]struct{}) bool {

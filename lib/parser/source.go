@@ -82,11 +82,15 @@ func startIdxOfFilepath(chunk string) int {
 func consumeLineNumSuffix(line string, endIdx int) (lineNum uint64, idx int) {
 	if len(line) > endIdx+2 && line[endIdx] == ':' {
 		remaining := line[endIdx+1:]
-		nextSpace := strings.IndexByte(remaining, ' ')
-		if nextSpace != -1 {
-			lineNum, _ = strconv.ParseUint(remaining[:nextSpace], 10, 64)
 
-			endIdx += 1 + nextSpace + 1
+		numEndIdx := consumeNextNumber(remaining, 0)
+		if numEndIdx > 0 {
+			lineNum, err := strconv.ParseUint(remaining[:numEndIdx], 10, 64)
+			if err != nil {
+				return 0, endIdx
+			}
+
+			return lineNum, endIdx + numEndIdx + 1
 		}
 	}
 	return lineNum, endIdx

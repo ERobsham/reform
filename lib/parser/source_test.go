@@ -120,3 +120,53 @@ func Test_startIdxOfFilepath(t *testing.T) {
 		})
 	}
 }
+
+func Test_consumeLineNumSuffix(t *testing.T) {
+	type args struct {
+		line   string
+		endIdx int
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantLineNum uint64
+		wantIdx     int
+	}{
+		{
+			name:        "line number suffix at EoL",
+			args:        args{"src/file.c:10", 10},
+			wantLineNum: 10,
+			wantIdx:     13,
+		},
+		{
+			name:        "line number suffix w/space",
+			args:        args{"src/file.c:10 120 1203", 10},
+			wantLineNum: 10,
+			wantIdx:     13,
+		},
+		{
+			name:        "line number suffix w/colon separator",
+			args:        args{"src/file.c:10: 120 1203", 10},
+			wantLineNum: 10,
+			wantIdx:     13,
+		},
+		{
+			name:        "line number suffix w/wrapper",
+			args:        args{"src/file.c:10>120 1203", 10},
+			wantLineNum: 10,
+			wantIdx:     13,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotLineNum, gotIdx := consumeLineNumSuffix(tt.args.line, tt.args.endIdx)
+			if gotLineNum != tt.wantLineNum {
+				t.Errorf("consumeLineNumSuffix() gotLineNum = %v, want %v", gotLineNum, tt.wantLineNum)
+			}
+			if gotIdx != tt.wantIdx {
+				t.Errorf("consumeLineNumSuffix() gotIdx = %v, want %v", gotIdx, tt.wantIdx)
+			}
+		})
+	}
+}
