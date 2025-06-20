@@ -179,3 +179,40 @@ func Test_parseMsgSuffixTimeStamp(t *testing.T) {
 		})
 	}
 }
+
+func Test_parsePrefixDuration(t *testing.T) {
+	type args struct {
+		line string
+	}
+	tests := []struct {
+		name          string
+		args          args
+		want          time.Duration
+		wantRemainder string
+		wantErr       bool
+	}{
+		{
+			name:          "rust example",
+			args:          args{" 300:04:05.151 ::: cool_crate::useful_module [WARN] something went wrong"},
+			want:          (time.Hour * 300) + (time.Minute * 4) + time.Duration(float64(time.Second)*5.151),
+			wantRemainder: "::: cool_crate::useful_module [WARN] something went wrong",
+			wantErr:       false,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := parsePrefixDuration(tt.args.line)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parsePrefixDuration() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("parsePrefixDuration() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.wantRemainder {
+				t.Errorf("parsePrefixDuration() got1 = %v, want %v", got1, tt.wantRemainder)
+			}
+		})
+	}
+}

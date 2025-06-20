@@ -32,6 +32,12 @@ func ParseLine(line string) types.ParsedLine {
 	suffixTimestamp, remaining, err := parseMsgSuffixTimeStamp(remaining)
 	suffixTimestampParsed := (err == nil)
 
+	if !prefixTimestampParsed {
+		// some Rust loggers print the 'total runtime duration' as a prefix.
+		// we're not saving it currently, but trimming it off makes further parsing easier.
+		_, remaining, _ = parsePrefixDuration(remaining)
+	}
+
 	logLevel, remaining, err := parseLogLevel(remaining)
 	logLevelParsed := (err == nil)
 
