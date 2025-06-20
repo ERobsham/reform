@@ -29,6 +29,11 @@ func parseSourceFileInfo(line string) (sfInfo types.SourceFileInfo, remainder st
 		}
 
 		endIdx += len(suffix)
+
+		if len(trimmed) > endIdx+1 && !isInSet(trimmed[endIdx], stdWrapperOrSrcEndingSuffixMap) {
+			continue
+		}
+
 		sfInfo.Language = lang
 
 		startIdx := startIdxOfFilepath(trimmed[:endIdx])

@@ -21,6 +21,15 @@ var (
 		'>': {},
 		' ': {},
 	}
+
+	stdWrapperOrSrcEndingSuffixMap = map[byte]struct{}{
+		')': {},
+		'}': {},
+		']': {},
+		'>': {},
+		':': {},
+		' ': {},
+	}
 )
 
 func consumeNextSpace(line string, endIdx int) int {
