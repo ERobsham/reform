@@ -6,10 +6,13 @@ func parseLogLevel(line string) (logLevel string, remainder string, err error) {
 	const max_prefix_len = 9 + 2 // (max keylen + 2 for any 'wrappers')
 	stdLogLevels := map[string]struct{}{
 		"trace":     {},
+		"dbg":       {},
 		"debug":     {},
 		"debugging": {},
+		"inf":       {},
 		"info":      {},
 		"notice":    {},
+		"wrn":       {},
 		"warn":      {},
 		"warning":   {},
 		"err":       {},
@@ -22,11 +25,14 @@ func parseLogLevel(line string) (logLevel string, remainder string, err error) {
 	}
 	levelNormalizationMap := map[string]string{
 		"trace":     "debug",
+		"dbg":       "debug",
 		"debug":     "debug",
 		"debugging": "debug",
+		"inf":       "info",
 		"info":      "info",
 		"notice":    "info",
 		"warn":      "warn",
+		"wrn":       "warn",
 		"warning":   "warn",
 		"err":       "error",
 		"error":     "error",
