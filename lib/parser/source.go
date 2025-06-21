@@ -18,9 +18,12 @@ func parseSourceFileInfo(line string) (sfInfo types.SourceFileInfo, remainder st
 		"Go":          ".go",
 		"Rust":        ".rs",
 	}
-	remainder = line
 
-	trimmed := strings.TrimLeft(remainder, " ")
+	trimmed := strings.TrimLeft(line, " ")
+	sfInfo, remainder, err = handleSpecialCases(trimmed)
+	if err == nil {
+		return
+	}
 
 	for lang, suffix := range suffixTypeMap {
 		endIdx := strings.Index(trimmed, suffix)
@@ -66,6 +69,23 @@ func parseSourceFileInfo(line string) (sfInfo types.SourceFileInfo, remainder st
 	}
 
 	return sfInfo, remainder, nil
+}
+
+func handleSpecialCases(line string) (sfInfo types.SourceFileInfo, remainder string, err error) {
+
+	// handle special case seen in some rust programs: like
+	// `2:03:04.567 ::: cool_crate::useful_module [WARN] something went wrong!`
+	//              ^^^^
+	if len(line) > 4 && strings.HasPrefix(line, "::: ") {
+		line = line[4:]
+
+		crate, idx := consumeNextRustCrateName(line, 0)
+		sfInfo.Filename = crate
+
+		return sfInfo, line[idx:], nil
+	}
+
+	return sfInfo, line, ParseError("not special case")
 }
 
 func startIdxOfFilepath(chunk string) int {
@@ -166,4 +186,21 @@ func consumeCommonFilePrefixes(line string, startIdx int) int {
 	}
 
 	return startIdx
+}
+
+func consumeNextRustCrateName(line string, startIdx int) (crate string, idx int) {
+	idx = startIdx
+	for {
+		nextIdx := consumeNext(line, idx, isValidRustCrateChar)
+		if idx == nextIdx {
+			break
+		}
+
+		idx = nextIdx
+
+		if len(line[nextIdx:]) > 2 && line[nextIdx] == ':' && line[nextIdx+1] == ':' {
+			idx += 2
+		}
+	}
+	return line[startIdx:idx], idx
 }

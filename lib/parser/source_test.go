@@ -170,3 +170,47 @@ func Test_consumeLineNumSuffix(t *testing.T) {
 		})
 	}
 }
+
+func Test_consumeNextRustCrateName(t *testing.T) {
+	type args struct {
+		line     string
+		startIdx int
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantCrate string
+		wantIdx   int
+	}{
+		{
+			name:      "example 1",
+			args:      args{"cool_crate::useful_module [WARN] something went wrong!", 0},
+			wantCrate: "cool_crate::useful_module",
+			wantIdx:   25,
+		},
+		{
+			name:      "example 2",
+			args:      args{"cool_crate::useful_module: [WARN] something went wrong!", 0},
+			wantCrate: "cool_crate::useful_module",
+			wantIdx:   25,
+		},
+		{
+			name:      "example 3",
+			args:      args{"cool_crate::useful_module] [WARN] something went wrong!", 0},
+			wantCrate: "cool_crate::useful_module",
+			wantIdx:   25,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCrate, gotIdx := consumeNextRustCrateName(tt.args.line, tt.args.startIdx)
+			if gotCrate != tt.wantCrate {
+				t.Errorf("consumeNextRustCrate() gotCrate = %v, want %v", gotCrate, tt.wantCrate)
+			}
+			if gotIdx != tt.wantIdx {
+				t.Errorf("consumeNextRustCrate() gotIdx = %v, want %v", gotIdx, tt.wantIdx)
+			}
+		})
+	}
+}

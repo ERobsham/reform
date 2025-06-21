@@ -151,3 +151,11 @@ func isValidPathCharacter(b byte) bool {
 
 	return isAlphanumeric(b) || isInSet(b, nonAlphanumericPathCharacters)
 }
+
+func isValidRustCrateChar(b byte) bool {
+	nonAlphanumericPathCharacters := map[byte]struct{}{
+		'_': {},
+	}
+
+	return isAlphanumeric(b) || isInSet(b, nonAlphanumericPathCharacters)
+}
